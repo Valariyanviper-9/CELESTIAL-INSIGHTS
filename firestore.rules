@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {uid}
+    // Fields:
+    //   - uid: string (required)
+    //   - name: string (required, 1-100 chars)
+    //   - email: string (required, email format)
+    //   - hasUsedFreeConsultation: bool (required)
+    //   - createdAt: string (required, ISO 8601)
+    //
+    // Collection: appointments
+    // Document ID: {appointmentId}
+    // Fields:
+    //   - userId: string (required)
+    //   - userName: string (required)
+    //   - date: string (required)
+    //   - time: string (required)
+    //   - consultationType: string (required, enum)
+    //   - priceCharged: number (required, >= 0)
+    //   - status: string (required, enum)
+    //   - createdAt: string (required, ISO 8601)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    // Domain Validators
+    function isValidUser(data) {
+      return data.keys().hasOnly(['uid', 'name', 'email', 'hasUsedFreeConsultation', 'createdAt']) &&
+             data.uid == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             isValidEmail(data.email) &&
+             data.hasUsedFreeConsultation is bool &&
+             isValidDateString(data.createdAt);
+    }
+
+    function isValidAppointment(data) {
+      return data.keys().hasAll(['userId', 'userName', 'date', 'time', 'consultationType', 'priceCharged', 'status', 'createdAt']) &&
+             data.keys().hasOnly(['userId', 'userName', 'date', 'time', 'consultationType', 'priceCharged', 'status', 'createdAt', 'utrNumber']) &&
+             data.userId == request.auth.uid &&
+             data.userName is string && data.userName.size() > 0 &&
+             data.date is string &&
+             data.time is string &&
+             data.consultationType in ['Vastu Shastra', 'Numerology', 'Detailed Astrology'] &&
+             data.priceCharged is number && data.priceCharged >= 0 &&
+             data.status in ['pending', 'confirmed', 'completed', 'cancelled', 'Pending Verification', 'Confirmed'] &&
+             isValidDateString(data.createdAt) &&
+             (!('utrNumber' in data) || (data.utrNumber is string && data.utrNumber.size() == 12));
+    }
+
+    // Rules
+    match /users/{uid} {
+      allow get: if isAuthenticated() && request.auth.uid == uid;
+      allow list: if false;
+      allow create: if isAuthenticated() && request.auth.uid == uid && isValidUser(request.resource.data);
+      allow update: if isAuthenticated() && request.auth.uid == uid && isValidUser(request.resource.data) && 
+                    request.resource.data.uid == resource.data.uid &&
+                    request.resource.data.email == resource.data.email &&
+                    request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    match /appointments/{appointmentId} {
+      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && isValidAppointment(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && 
+                    isValidAppointment(request.resource.data) &&
+                    request.resource.data.userId == resource.data.userId &&
+                    request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false; // No deletion for audit trail
+    }
+  }
+}
