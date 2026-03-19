@@ -8,18 +8,7 @@ const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [profileImage, setProfileImage] = useState('/Images/gpt-image-1.5-high-fidelity_a_Subject_Description_ (1).png');
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  const staticProfileImage = '/Images/gpt-image-1.5-high-fidelity_a_Subject_Description_ (1).png';
 
   const services = [
     {
@@ -215,20 +204,15 @@ const LandingPage: React.FC = () => {
               <p className="text-sm font-bold text-indigo-deep/40 uppercase tracking-widest">Years Experience</p>
             </div>
             
-            {/* Profile Image Upload Circle */}
-            <label className="absolute -top-16 -right-16 w-40 h-40 md:w-56 md:h-56 rounded-full border-8 border-white shadow-2xl overflow-hidden z-20 cursor-pointer group/upload bg-white hidden md:flex items-center justify-center">
-              <input type="file" className="hidden" onChange={handleImageUpload} accept="image/*" />
+            {/* Profile Image Circle */}
+            <div className="absolute -top-16 -right-16 w-40 h-40 md:w-56 md:h-56 rounded-full border-8 border-white shadow-2xl overflow-hidden z-20 bg-white hidden md:flex items-center justify-center">
               <img 
-                src={profileImage} 
+                src={staticProfileImage} 
                 alt="Astrologer Profile" 
-                className="w-full h-full object-cover transition-transform group-hover/upload:scale-110"
+                className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
               />
-              <div className="absolute inset-0 bg-indigo-deep/40 flex flex-col items-center justify-center opacity-0 group-hover/upload:opacity-100 transition-opacity">
-                <Camera className="w-10 h-10 text-white mb-2" />
-                <span className="text-[10px] text-white font-bold uppercase tracking-widest">Change Photo</span>
-              </div>
-            </label>
+            </div>
           </motion.div>
         </div>
       </section>
