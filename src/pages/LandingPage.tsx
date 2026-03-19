@@ -8,7 +8,7 @@ const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [currentSlide, setCurrentSlide] = useState(0);
-  const staticProfileImage = '/Images/gpt-image-1.5-high-fidelity_a_Subject_Description_ (1).png';
+  const staticProfileImage = '/Images/profile-photo.png';
 
   const services = [
     {
