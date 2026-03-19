@@ -5,7 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Moon, Star, Mail, Lock, Loader2 } from 'lucide-react';
 
 const AuthPage: React.FC = () => {
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, loading } = useAuth();
+  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, loading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
   const [email, setEmail] = useState('');
@@ -14,12 +14,18 @@ const AuthPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  React.useEffect(() => {
+    if (user && !loading) {
+      const returnTo = location.state?.returnTo || '/dashboard';
+      navigate(returnTo, { replace: true });
+    }
+  }, [user, loading, navigate, location]);
+
   const handleGoogleSignIn = async () => {
     setAuthLoading(true);
     try {
       await signInWithGoogle();
-      const returnTo = location.state?.returnTo || '/dashboard';
-      navigate(returnTo, { state: location.state });
+      // Navigation will be handled by the useEffect once user is set and loading is false
     } catch (error) {
       console.error(error);
       alert("Authentication failed. Please try again.");
@@ -37,8 +43,7 @@ const AuthPage: React.FC = () => {
       } else {
         await signUpWithEmail(email, password, name);
       }
-      const returnTo = location.state?.returnTo || '/dashboard';
-      navigate(returnTo, { state: location.state });
+      // Navigation will be handled by the useEffect once user is set and loading is false
     } catch (error: any) {
       console.error(error);
       alert(error.message || "Authentication failed.");

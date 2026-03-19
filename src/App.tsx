@@ -10,6 +10,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import AuthPage from './pages/AuthPage';
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -23,6 +24,20 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   );
   
   if (!user) return <Navigate to="/auth" />;
+  
+  return <>{children}</>;
+};
+
+const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, isAdmin, loading } = useAuth();
+  
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-indigo-deep text-white">
+      <div className="animate-pulse text-gold-metallic font-serif text-2xl">Verifying Admin Access...</div>
+    </div>
+  );
+  
+  if (!user || !isAdmin) return <Navigate to="/dashboard" />;
   
   return <>{children}</>;
 };
@@ -41,6 +56,14 @@ function AppContent() {
               <ProtectedRoute>
                 <Dashboard />
               </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin" 
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
             } 
           />
           <Route path="*" element={<Navigate to="/" />} />

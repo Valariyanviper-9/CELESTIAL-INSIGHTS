@@ -5,6 +5,7 @@ export interface UserProfile {
   hasUsedFreeConsultation: boolean;
   createdAt: string;
   role?: 'admin' | 'user';
+  photoURL?: string;
 }
 
 export interface Appointment {

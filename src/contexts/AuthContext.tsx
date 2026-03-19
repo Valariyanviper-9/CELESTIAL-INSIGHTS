@@ -38,11 +38,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('AuthContext: Setting up onAuthStateChanged');
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
+      console.log('AuthContext: Auth state changed:', firebaseUser?.email);
       setUser(firebaseUser);
       if (!firebaseUser) {
         setProfile(null);
         setLoading(false);
+      } else {
+        // We have a user, but we need to wait for the profile
+        setLoading(true);
       }
     });
 
@@ -50,17 +55,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      console.log('AuthContext: No user, skipping profile fetch');
+      return;
+    }
 
+    console.log('AuthContext: Fetching profile for:', user.uid);
     setLoading(true);
     const path = `users/${user.uid}`;
     const unsubscribeProfile = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
       if (docSnap.exists()) {
-        setProfile(docSnap.data() as UserProfile);
+        const data = docSnap.data() as UserProfile;
+        console.log('AuthContext: Profile loaded:', data.role);
+        setProfile(data);
+      } else {
+        console.log('AuthContext: No profile found in Firestore');
+        // If no profile exists yet, we still set loading to false
+        // createProfile will eventually create it and trigger this again
+        setProfile(null);
       }
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, path);
+      console.error('AuthContext: Profile fetch error:', error);
+      // Don't throw here, just log and set loading false to avoid crashing the app
+      // handleFirestoreError(error, OperationType.GET, path);
       setLoading(false);
     });
 
@@ -82,7 +100,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: user.email || '',
           hasUsedFreeConsultation: false,
           createdAt: new Date().toISOString(),
-          role
+          role,
+          photoURL: user.photoURL || ''
         };
         await setDoc(docRef, newProfile);
       } else {
@@ -109,7 +128,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithEmail = async (email: string, pass: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, pass);
+      const result = await signInWithEmailAndPassword(auth, email, pass);
+      await createProfile(result.user);
     } catch (error) {
       console.error("Email Sign In Error:", error);
       throw error;
@@ -131,7 +151,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await signOut(auth);
   };
 
-  const isAdmin = profile?.role === 'admin' || (!!user && ADMIN_EMAILS.includes(user.email || ''));
+  const isAdmin = profile?.role === 'admin' || (!!user && user.emailVerified && ADMIN_EMAILS.includes(user.email || ''));
+  
+  console.log('AuthContext State:', { 
+    hasUser: !!user, 
+    hasProfile: !!profile, 
+    loading, 
+    isAdmin,
+    email: user?.email 
+  });
 
   return (
     <AuthContext.Provider value={{ user, profile, isAdmin, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout }}>

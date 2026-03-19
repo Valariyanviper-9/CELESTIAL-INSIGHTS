@@ -58,13 +58,14 @@ service cloud.firestore {
     // Domain Validators
     function isValidUser(data) {
       return data.keys().hasAll(['uid', 'name', 'email', 'hasUsedFreeConsultation', 'createdAt']) &&
-             data.keys().hasOnly(['uid', 'name', 'email', 'hasUsedFreeConsultation', 'createdAt', 'role']) &&
+             data.keys().hasOnly(['uid', 'name', 'email', 'hasUsedFreeConsultation', 'createdAt', 'role', 'photoURL']) &&
              data.uid == request.auth.uid &&
-             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
              isValidEmail(data.email) &&
              data.hasUsedFreeConsultation is bool &&
              isValidDateString(data.createdAt) &&
-             (!('role' in data) || (data.role in ['admin', 'user']));
+             (!('role' in data) || (data.role == 'user' || isAdmin())) &&
+             (!('photoURL' in data) || data.photoURL is string);
     }
 
     function isValidAppointment(data) {
