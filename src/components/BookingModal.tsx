@@ -9,9 +9,10 @@ import { motion, AnimatePresence } from 'motion/react';
 interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialService?: string;
 }
 
-const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose }) => {
+const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, initialService }) => {
   const { user, profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -19,9 +20,15 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose }) => {
   const [copySuccess, setCopySuccess] = useState(false);
   const [formData, setFormData] = useState({
     date: '',
-    time: '',
-    type: 'Detailed Astrology' as Appointment['consultationType']
+    type: (initialService || 'Detailed Astrology') as Appointment['consultationType']
   });
+
+  // Reset type when initialService changes or modal opens
+  React.useEffect(() => {
+    if (isOpen && initialService) {
+      setFormData(prev => ({ ...prev, type: initialService as any }));
+    }
+  }, [isOpen, initialService]);
 
   const isFree = !profile?.hasUsedFreeConsultation;
   const price = isFree ? 0 : 2000;
@@ -52,7 +59,6 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose }) => {
         userId: user.uid,
         userName: profile.name,
         date: formData.date,
-        time: formData.time,
         consultationType: formData.type,
         priceCharged: price,
         status: 'pending',
@@ -60,12 +66,22 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose }) => {
         ...(isFree ? {} : { utrNumber })
       };
 
-      await addDoc(collection(db, 'appointments'), appointment);
+      try {
+        await addDoc(collection(db, 'appointments'), appointment);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, appointmentPath);
+        return;
+      }
       
       if (isFree) {
-        await updateDoc(doc(db, 'users', user.uid), {
-          hasUsedFreeConsultation: true
-        });
+        try {
+          await updateDoc(doc(db, 'users', user.uid), {
+            hasUsedFreeConsultation: true
+          });
+        } catch (error) {
+          handleFirestoreError(error, OperationType.WRITE, userPath);
+          return;
+        }
       }
 
       setSuccess(true);
@@ -75,11 +91,8 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose }) => {
         setUtrNumber('');
       }, 3000);
     } catch (error) {
-      if (isFree) {
-        handleFirestoreError(error, OperationType.WRITE, userPath);
-      } else {
-        handleFirestoreError(error, OperationType.CREATE, appointmentPath);
-      }
+      // General error handling if needed
+      console.error("Booking Error:", error);
     } finally {
       setLoading(false);
     }
@@ -142,33 +155,18 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose }) => {
                     <h3 className="font-bold text-indigo-deep uppercase tracking-widest text-sm">Consultation Details</h3>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-indigo-deep/40 uppercase tracking-widest ml-1">Date</label>
-                      <div className="relative">
-                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-deep/30" />
-                        <input 
-                          required
-                          type="date" 
-                          min={new Date().toISOString().split('T')[0]}
-                          className="w-full pl-12 pr-4 py-4 bg-indigo-deep/5 border-none rounded-2xl focus:ring-2 focus:ring-gold-metallic outline-none transition-all"
-                          value={formData.date}
-                          onChange={e => setFormData({...formData, date: e.target.value})}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-indigo-deep/40 uppercase tracking-widest ml-1">Time</label>
-                      <div className="relative">
-                        <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-deep/30" />
-                        <input 
-                          required
-                          type="time" 
-                          className="w-full pl-12 pr-4 py-4 bg-indigo-deep/5 border-none rounded-2xl focus:ring-2 focus:ring-gold-metallic outline-none transition-all"
-                          value={formData.time}
-                          onChange={e => setFormData({...formData, time: e.target.value})}
-                        />
-                      </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-indigo-deep/40 uppercase tracking-widest ml-1">Date</label>
+                    <div className="relative">
+                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-deep/30" />
+                      <input 
+                        required
+                        type="date" 
+                        min={new Date().toISOString().split('T')[0]}
+                        className="w-full pl-12 pr-4 py-4 bg-indigo-deep/5 border-none rounded-2xl focus:ring-2 focus:ring-gold-metallic outline-none transition-all"
+                        value={formData.date}
+                        onChange={e => setFormData({...formData, date: e.target.value})}
+                      />
                     </div>
                   </div>
 

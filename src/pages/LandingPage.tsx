@@ -8,9 +8,23 @@ const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const handleCTA = () => {
-    if (user) navigate('/dashboard');
-    else navigate('/auth');
+  const handleCTA = (serviceName?: string) => {
+    if (user) {
+      navigate('/dashboard', { 
+        state: { 
+          openBooking: true, 
+          service: serviceName 
+        } 
+      });
+    } else {
+      navigate('/auth', { 
+        state: { 
+          returnTo: '/dashboard',
+          openBooking: true,
+          service: serviceName
+        }
+      });
+    }
   };
 
   const services = [
@@ -97,7 +111,7 @@ const LandingPage: React.FC = () => {
               prosperity, and clarity to your personal and professional life.
             </p>
             <div className="flex flex-wrap gap-4">
-              <button onClick={handleCTA} className="btn-gold flex items-center gap-2 group">
+              <button onClick={() => handleCTA('Detailed Astrology')} className="btn-gold flex items-center gap-2 group">
                 Book Your First Free Session
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
@@ -177,7 +191,7 @@ const LandingPage: React.FC = () => {
                     </li>
                   ))}
                 </ul>
-                <button onClick={handleCTA} className="w-full py-3 rounded-xl border border-indigo-deep/10 font-bold group-hover:bg-indigo-deep group-hover:text-white transition-all">
+                <button onClick={() => handleCTA(service.title)} className="w-full py-3 rounded-xl border border-indigo-deep/10 font-bold group-hover:bg-indigo-deep group-hover:text-white transition-all">
                   Book Session
                 </button>
               </motion.div>

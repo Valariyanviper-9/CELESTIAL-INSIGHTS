@@ -5,13 +5,25 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { collection, query, where, onSnapshot, orderBy, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { Appointment } from '../types';
 import { Calendar, Clock, Star, Plus, Loader2, CheckCircle2, AlertCircle, ShieldCheck, User as UserIcon, Trash2 } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import BookingModal from '../components/BookingModal';
 
 const Dashboard: React.FC = () => {
   const { user, profile, isAdmin } = useAuth();
+  const location = useLocation();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (location.state?.openBooking) {
+      setSelectedService(location.state.service);
+      setIsBookingOpen(true);
+      // Clear state to prevent modal reopening on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   useEffect(() => {
     if (!user) return;
@@ -188,10 +200,12 @@ const Dashboard: React.FC = () => {
                                 <Calendar className="w-3 h-3" />
                                 {new Date(apt.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                               </span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {apt.time}
-                              </span>
+                              {apt.time && (
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {apt.time}
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -262,7 +276,11 @@ const Dashboard: React.FC = () => {
 
       <BookingModal 
         isOpen={isBookingOpen} 
-        onClose={() => setIsBookingOpen(false)} 
+        onClose={() => {
+          setIsBookingOpen(false);
+          setSelectedService(undefined);
+        }} 
+        initialService={selectedService}
       />
     </div>
   );

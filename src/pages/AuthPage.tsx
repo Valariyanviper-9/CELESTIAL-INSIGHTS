@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Moon, Star, Mail, Lock, Loader2 } from 'lucide-react';
 
 const AuthPage: React.FC = () => {
@@ -12,12 +12,14 @@ const AuthPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleGoogleSignIn = async () => {
     setAuthLoading(true);
     try {
       await signInWithGoogle();
-      navigate('/dashboard');
+      const returnTo = location.state?.returnTo || '/dashboard';
+      navigate(returnTo, { state: location.state });
     } catch (error) {
       console.error(error);
       alert("Authentication failed. Please try again.");
@@ -35,7 +37,8 @@ const AuthPage: React.FC = () => {
       } else {
         await signUpWithEmail(email, password, name);
       }
-      navigate('/dashboard');
+      const returnTo = location.state?.returnTo || '/dashboard';
+      navigate(returnTo, { state: location.state });
     } catch (error: any) {
       console.error(error);
       alert(error.message || "Authentication failed.");
