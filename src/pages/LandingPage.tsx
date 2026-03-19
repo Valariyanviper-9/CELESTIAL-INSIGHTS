@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Star, Shield, Zap, ArrowRight, CheckCircle2, Hash, Home, Baby, Brain, BookOpen, Wind, Moon, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Star, Shield, Zap, ArrowRight, CheckCircle2, Hash, Home, Baby, Brain, BookOpen, Wind, Moon, ChevronRight, ChevronLeft, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -8,6 +8,18 @@ const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [profileImage, setProfileImage] = useState('/Images/gpt-image-1.5-high-fidelity_a_Subject_Description_ (1).png');
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const services = [
     {
@@ -202,10 +214,21 @@ const LandingPage: React.FC = () => {
               <p className="text-4xl font-serif text-indigo-deep">15+</p>
               <p className="text-sm font-bold text-indigo-deep/40 uppercase tracking-widest">Years Experience</p>
             </div>
-            <div className="absolute -top-10 -right-10 bg-indigo-deep p-6 rounded-3xl shadow-xl z-20 hidden md:block">
-              <p className="text-gold-metallic text-4xl font-serif">99%</p>
-              <p className="text-white/60 text-sm font-bold uppercase tracking-widest">Accuracy Rate</p>
-            </div>
+            
+            {/* Profile Image Upload Circle */}
+            <label className="absolute -top-16 -right-16 w-40 h-40 md:w-56 md:h-56 rounded-full border-8 border-white shadow-2xl overflow-hidden z-20 cursor-pointer group/upload bg-white hidden md:flex items-center justify-center">
+              <input type="file" className="hidden" onChange={handleImageUpload} accept="image/*" />
+              <img 
+                src={profileImage} 
+                alt="Astrologer Profile" 
+                className="w-full h-full object-cover transition-transform group-hover/upload:scale-110"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-indigo-deep/40 flex flex-col items-center justify-center opacity-0 group-hover/upload:opacity-100 transition-opacity">
+                <Camera className="w-10 h-10 text-white mb-2" />
+                <span className="text-[10px] text-white font-bold uppercase tracking-widest">Change Photo</span>
+              </div>
+            </label>
           </motion.div>
         </div>
       </section>
