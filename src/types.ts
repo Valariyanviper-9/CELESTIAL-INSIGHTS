@@ -4,6 +4,7 @@ export interface UserProfile {
   email: string;
   hasUsedFreeConsultation: boolean;
   createdAt: string;
+  role?: 'admin' | 'user';
 }
 
 export interface Appointment {
@@ -12,7 +13,7 @@ export interface Appointment {
   userName: string;
   date: string;
   time: string;
-  consultationType: 'Vastu Shastra' | 'Numerology' | 'Detailed Astrology';
+  consultationType: 'Vastu Shastra' | 'Numerology' | 'Detailed Astrology' | 'Naam Karan' | 'Psychological Counselling' | 'Astrology + Lal Kitab' | 'Meditation & Healing' | 'Nakshatras';
   priceCharged: number;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'Pending Verification' | 'Confirmed';
   utrNumber?: string;

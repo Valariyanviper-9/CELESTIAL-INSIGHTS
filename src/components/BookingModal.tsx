@@ -55,7 +55,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose }) => {
         time: formData.time,
         consultationType: formData.type,
         priceCharged: price,
-        status: isFree ? 'Confirmed' : 'Pending Verification',
+        status: 'pending',
         createdAt: new Date().toISOString(),
         ...(isFree ? {} : { utrNumber })
       };
@@ -126,10 +126,10 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose }) => {
                 >
                   <CheckCircle className="w-12 h-12" />
                 </motion.div>
-                <h3 className="text-2xl font-serif text-indigo-deep mb-2">Booking Confirmed!</h3>
+                <h3 className="text-2xl font-serif text-indigo-deep mb-2">Booking Received!</h3>
                 <p className="text-indigo-deep/60">
                   {isFree 
-                    ? "Your free cosmic journey begins soon. We'll contact you shortly." 
+                    ? "Your request for a free session is received. We'll confirm it shortly." 
                     : "Your payment is being verified. You'll receive a confirmation soon."}
                 </p>
               </div>
@@ -182,6 +182,11 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose }) => {
                       <option value="Detailed Astrology">Detailed Astrology</option>
                       <option value="Vastu Shastra">Vastu Shastra</option>
                       <option value="Numerology">Numerology</option>
+                      <option value="Naam Karan">Naam Karan</option>
+                      <option value="Psychological Counselling">Psychological Counselling</option>
+                      <option value="Astrology + Lal Kitab">Astrology + Lal Kitab</option>
+                      <option value="Meditation & Healing">Meditation & Healing</option>
+                      <option value="Nakshatras">Nakshatras</option>
                     </select>
                   </div>
                 </div>

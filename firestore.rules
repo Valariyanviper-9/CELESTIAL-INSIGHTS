@@ -14,6 +14,7 @@ service cloud.firestore {
     //   - email: string (required, email format)
     //   - hasUsedFreeConsultation: bool (required)
     //   - createdAt: string (required, ISO 8601)
+    //   - role: string (optional, enum)
     //
     // Collection: appointments
     // Document ID: {appointmentId}
@@ -46,14 +47,23 @@ service cloud.firestore {
       return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
     }
 
+    function isAdmin() {
+      return isAuthenticated() && 
+             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+              (request.auth.token.email == "himanshu.devilking@gmail.com" && request.auth.token.email_verified == true) ||
+              (request.auth.token.email == "himanshu.sabharwal9@gmail.com" && request.auth.token.email_verified == true) ||
+              (request.auth.token.email == "meenutalwar.talwar@gmail.com" && request.auth.token.email_verified == true));
+    }
+
     // Domain Validators
     function isValidUser(data) {
-      return data.keys().hasOnly(['uid', 'name', 'email', 'hasUsedFreeConsultation', 'createdAt']) &&
+      return data.keys().hasOnly(['uid', 'name', 'email', 'hasUsedFreeConsultation', 'createdAt', 'role']) &&
              data.uid == request.auth.uid &&
              data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
              isValidEmail(data.email) &&
              data.hasUsedFreeConsultation is bool &&
-             isValidDateString(data.createdAt);
+             isValidDateString(data.createdAt) &&
+             (!('role' in data) || (data.role in ['admin', 'user']));
     }
 
     function isValidAppointment(data) {
@@ -63,7 +73,7 @@ service cloud.firestore {
              data.userName is string && data.userName.size() > 0 &&
              data.date is string &&
              data.time is string &&
-             data.consultationType in ['Vastu Shastra', 'Numerology', 'Detailed Astrology'] &&
+             data.consultationType in ['Vastu Shastra', 'Numerology', 'Detailed Astrology', 'Naam Karan', 'Psychological Counselling', 'Astrology + Lal Kitab', 'Meditation & Healing', 'Nakshatras'] &&
              data.priceCharged is number && data.priceCharged >= 0 &&
              data.status in ['pending', 'confirmed', 'completed', 'cancelled', 'Pending Verification', 'Confirmed'] &&
              isValidDateString(data.createdAt) &&
@@ -82,13 +92,18 @@ service cloud.firestore {
     }
 
     match /appointments/{appointmentId} {
-      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow read: if isAuthenticated() && (isAdmin() || resource == null || resource.data.userId == request.auth.uid);
       allow create: if isAuthenticated() && isValidAppointment(request.resource.data);
-      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && 
-                    isValidAppointment(request.resource.data) &&
-                    request.resource.data.userId == resource.data.userId &&
-                    request.resource.data.createdAt == resource.data.createdAt;
-      allow delete: if false; // No deletion for audit trail
+      allow update: if isAuthenticated() && (
+                      (resource.data.userId == request.auth.uid && 
+                       isValidAppointment(request.resource.data) &&
+                       request.resource.data.userId == resource.data.userId &&
+                       request.resource.data.createdAt == resource.data.createdAt) ||
+                      (isAdmin() && 
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
+                       request.resource.data.status in ['pending', 'confirmed', 'completed', 'cancelled', 'Pending Verification', 'Confirmed'])
+                    );
+      allow delete: if isAuthenticated() && isAdmin();
     }
   }
 }

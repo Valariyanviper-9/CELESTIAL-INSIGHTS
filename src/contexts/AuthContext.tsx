@@ -16,12 +16,19 @@ import { UserProfile } from '../types';
 interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
+  isAdmin: boolean;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, pass: string) => Promise<void>;
   signUpWithEmail: (email: string, pass: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
 }
+
+const ADMIN_EMAILS = [
+  'himanshu.sabharwal9@gmail.com',
+  'meenutalwar.talwar@gmail.com',
+  'himanshu.devilking@gmail.com'
+];
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -66,15 +73,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const docRef = doc(db, 'users', user.uid);
       const docSnap = await getDoc(docRef);
       
+      const role = ADMIN_EMAILS.includes(user.email || '') ? 'admin' : 'user';
+
       if (!docSnap.exists()) {
         const newProfile: UserProfile = {
           uid: user.uid,
           name: name || user.displayName || 'User',
           email: user.email || '',
           hasUsedFreeConsultation: false,
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          role
         };
         await setDoc(docRef, newProfile);
+      } else {
+        const existingData = docSnap.data() as UserProfile;
+        if (existingData.role !== role) {
+          await setDoc(docRef, { role }, { merge: true });
+        }
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, path);
@@ -116,8 +131,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await signOut(auth);
   };
 
+  const isAdmin = profile?.role === 'admin' || (!!user && ADMIN_EMAILS.includes(user.email || ''));
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout }}>
+    <AuthContext.Provider value={{ user, profile, isAdmin, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout }}>
       {children}
     </AuthContext.Provider>
   );

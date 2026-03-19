@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Star, Shield, Zap, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Star, Shield, Zap, ArrowRight, CheckCircle2, Hash, Home, Baby, Brain, BookOpen, Wind, Moon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -12,6 +12,58 @@ const LandingPage: React.FC = () => {
     if (user) navigate('/dashboard');
     else navigate('/auth');
   };
+
+  const services = [
+    {
+      title: 'Numerology',
+      desc: 'Analysis, Guidance, Name Correction, Lo Shu grid, Moolank, Bhagyank and Kua Number, Remedies for missing and multiple times numbers.',
+      icon: <Hash className="w-10 h-10" />,
+      img: 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&q=80&w=600',
+      features: ['Name Correction', 'Lo Shu Grid', 'Moolank & Bhagyank']
+    },
+    {
+      title: 'Vastu Shastra',
+      desc: 'Total Vastu (Live), Simple remedies, Numero Vastu, Astro Vastu, Elements, Colours. Starting 11000+ (Depends on size of the house).',
+      icon: <Home className="w-10 h-10" />,
+      img: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=600',
+      features: ['Numero Vastu', 'Astro Vastu', 'Element Balancing']
+    },
+    {
+      title: 'Naam Karan',
+      desc: "Baby's name selection that is astrological and astro + numerologically aligned for a bright future.",
+      icon: <Baby className="w-10 h-10" />,
+      img: 'https://images.unsplash.com/photo-1519689689353-897016b86020?auto=format&fit=crop&q=80&w=600',
+      features: ["Baby's Name", 'Astrological Alignment', 'Numerology Check']
+    },
+    {
+      title: 'Psychological Counselling',
+      desc: 'Expert guidance for children, relationship issues, anxiety, and depression to restore mental peace.',
+      icon: <Brain className="w-10 h-10" />,
+      img: 'https://images.unsplash.com/photo-1544027993-37dbfe43562a?auto=format&fit=crop&q=80&w=600',
+      features: ['Children & Relationship', 'Anxiety & Depression', 'Mental Wellness']
+    },
+    {
+      title: 'Astrology + Lal Kitab',
+      desc: 'Remedies and general guidance based on in-depth analysis of planets and ancient Lal Kitab wisdom.',
+      icon: <BookOpen className="w-10 h-10" />,
+      img: 'https://images.unsplash.com/photo-1532968961962-8a0cb3a2d4f5?auto=format&fit=crop&q=80&w=600',
+      features: ['Planetary Analysis', 'Lal Kitab Remedies', 'General Guidance']
+    },
+    {
+      title: 'Meditation & Healing',
+      desc: 'Self-healing techniques and Chakra healing to balance your energy and achieve spiritual growth.',
+      icon: <Wind className="w-10 h-10" />,
+      img: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80&w=600',
+      features: ['Self Healing', 'Chakra Balancing', 'Spiritual Growth']
+    },
+    {
+      title: 'Nakshatras',
+      desc: 'Identify lucky & unlucky nakshatras, their animals, plants, birds, and effective remedies.',
+      icon: <Moon className="w-10 h-10" />,
+      img: 'https://images.unsplash.com/photo-1504333638930-c8787321eee0?auto=format&fit=crop&q=80&w=600',
+      features: ['Nakshatra Analysis', 'Animal & Plant Totems', 'Specific Remedies']
+    }
+  ];
 
   return (
     <div className="overflow-hidden">
@@ -93,33 +145,14 @@ const LandingPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                title: 'Vastu Shastra',
-                desc: 'Optimize the energy flow in your home or office to attract health, wealth, and happiness.',
-                icon: <Shield className="w-10 h-10" />,
-                img: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=600'
-              },
-              {
-                title: 'Numerology',
-                desc: 'Discover the hidden power of numbers in your life and how they influence your personality and destiny.',
-                icon: <Zap className="w-10 h-10" />,
-                img: 'https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&q=80&w=600'
-              },
-              {
-                title: 'Detailed Astrology',
-                desc: 'In-depth analysis of your birth chart to understand planetary influences on your career, relationships, and health.',
-                icon: <Star className="w-10 h-10" />,
-                img: 'https://images.unsplash.com/photo-1532968961962-8a0cb3a2d4f5?auto=format&fit=crop&q=80&w=600'
-              }
-            ].map((service, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {services.map((service, i) => (
               <motion.div 
                 key={i}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.2 }}
+                transition={{ delay: i * 0.1 }}
                 className="card-premium group"
               >
                 <div className="relative h-48 rounded-xl overflow-hidden mb-8">
@@ -135,16 +168,14 @@ const LandingPage: React.FC = () => {
                   </div>
                 </div>
                 <h3 className="text-2xl font-serif text-indigo-deep mb-4">{service.title}</h3>
-                <p className="text-indigo-deep/60 leading-relaxed mb-8">{service.desc}</p>
+                <p className="text-indigo-deep/60 leading-relaxed mb-8 text-sm">{service.desc}</p>
                 <ul className="space-y-3 mb-8">
-                  <li className="flex items-center gap-2 text-sm font-medium text-indigo-deep/80">
-                    <CheckCircle2 className="w-4 h-4 text-gold-metallic" />
-                    Personalized Reports
-                  </li>
-                  <li className="flex items-center gap-2 text-sm font-medium text-indigo-deep/80">
-                    <CheckCircle2 className="w-4 h-4 text-gold-metallic" />
-                    1-on-1 Consultation
-                  </li>
+                  {service.features.map((feature, j) => (
+                    <li key={j} className="flex items-center gap-2 text-sm font-medium text-indigo-deep/80">
+                      <CheckCircle2 className="w-4 h-4 text-gold-metallic" />
+                      {feature}
+                    </li>
+                  ))}
                 </ul>
                 <button onClick={handleCTA} className="w-full py-3 rounded-xl border border-indigo-deep/10 font-bold group-hover:bg-indigo-deep group-hover:text-white transition-all">
                   Book Session

@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
 import { db, handleFirestoreError, OperationType } from '../firebase';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { Appointment } from '../types';
-import { Calendar, Clock, Star, Plus, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, Star, Plus, Loader2, CheckCircle2, AlertCircle, ShieldCheck, User as UserIcon, Trash2 } from 'lucide-react';
 import BookingModal from '../components/BookingModal';
 
 const Dashboard: React.FC = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
@@ -16,11 +16,9 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     if (!user) return;
 
-    const q = query(
-      collection(db, 'appointments'),
-      where('userId', '==', user.uid),
-      orderBy('createdAt', 'desc')
-    );
+    const q = isAdmin 
+      ? query(collection(db, 'appointments'), orderBy('createdAt', 'desc'))
+      : query(collection(db, 'appointments'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
 
     const path = 'appointments';
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -33,7 +31,26 @@ const Dashboard: React.FC = () => {
     });
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, isAdmin]);
+
+  const handleStatusUpdate = async (appointmentId: string, newStatus: Appointment['status']) => {
+    if (!isAdmin) return;
+    try {
+      await updateDoc(doc(db, 'appointments', appointmentId), { status: newStatus });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `appointments/${appointmentId}`);
+    }
+  };
+
+  const handleDelete = async (appointmentId: string) => {
+    if (!isAdmin) return;
+    
+    try {
+      await deleteDoc(doc(db, 'appointments', appointmentId));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `appointments/${appointmentId}`);
+    }
+  };
 
   if (!profile) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -47,16 +64,30 @@ const Dashboard: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
           <div>
-            <h1 className="text-4xl font-serif text-indigo-deep mb-2">Namaste, {profile.name}</h1>
-            <p className="text-indigo-deep/60">Manage your cosmic consultations and spiritual journey.</p>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-4xl font-serif text-indigo-deep">Namaste, {profile.name}</h1>
+              {isAdmin && (
+                <span className="bg-gold-metallic text-indigo-deep text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3" />
+                  Admin
+                </span>
+              )}
+            </div>
+            <p className="text-indigo-deep/60">
+              {isAdmin 
+                ? "Overseeing the cosmic consultations and spiritual journey of all seekers."
+                : "Manage your cosmic consultations and spiritual journey."}
+            </p>
           </div>
-          <button 
-            onClick={() => setIsBookingOpen(true)}
-            className="btn-gold flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Book New Session
-          </button>
+          {!isAdmin && (
+            <button 
+              onClick={() => setIsBookingOpen(true)}
+              className="btn-gold flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Book New Session
+            </button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -74,16 +105,20 @@ const Dashboard: React.FC = () => {
               </div>
               
               <div className="space-y-4">
+                {!isAdmin && (
+                  <div className="flex justify-between items-center p-4 bg-indigo-deep/5 rounded-2xl">
+                    <span className="text-sm font-bold text-indigo-deep/60 uppercase tracking-widest">Free Session</span>
+                    {profile.hasUsedFreeConsultation ? (
+                      <span className="text-xs font-bold text-red-400 uppercase">Used</span>
+                    ) : (
+                      <span className="text-xs font-bold text-green-500 uppercase">Available</span>
+                    )}
+                  </div>
+                )}
                 <div className="flex justify-between items-center p-4 bg-indigo-deep/5 rounded-2xl">
-                  <span className="text-sm font-bold text-indigo-deep/60 uppercase tracking-widest">Free Session</span>
-                  {profile.hasUsedFreeConsultation ? (
-                    <span className="text-xs font-bold text-red-400 uppercase">Used</span>
-                  ) : (
-                    <span className="text-xs font-bold text-green-500 uppercase">Available</span>
-                  )}
-                </div>
-                <div className="flex justify-between items-center p-4 bg-indigo-deep/5 rounded-2xl">
-                  <span className="text-sm font-bold text-indigo-deep/60 uppercase tracking-widest">Total Sessions</span>
+                  <span className="text-sm font-bold text-indigo-deep/60 uppercase tracking-widest">
+                    {isAdmin ? 'Total Appointments' : 'Your Sessions'}
+                  </span>
                   <span className="text-lg font-serif text-indigo-deep">{appointments.length}</span>
                 </div>
               </div>
@@ -101,7 +136,9 @@ const Dashboard: React.FC = () => {
           {/* Appointments List */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-3xl p-8 shadow-sm border border-indigo-deep/5 min-h-[500px]">
-              <h3 className="text-2xl font-serif text-indigo-deep mb-8">Your Appointments</h3>
+              <h3 className="text-2xl font-serif text-indigo-deep mb-8">
+                {isAdmin ? 'All Appointments' : 'Your Appointments'}
+              </h3>
               
               {loading ? (
                 <div className="flex items-center justify-center py-20">
@@ -113,12 +150,14 @@ const Dashboard: React.FC = () => {
                     <Calendar className="w-8 h-8" />
                   </div>
                   <p className="text-indigo-deep/40 font-medium">No appointments booked yet.</p>
-                  <button 
-                    onClick={() => setIsBookingOpen(true)}
-                    className="text-gold-metallic font-bold mt-2 hover:underline"
-                  >
-                    Book your first session now
-                  </button>
+                  {!isAdmin && (
+                    <button 
+                      onClick={() => setIsBookingOpen(true)}
+                      className="text-gold-metallic font-bold mt-2 hover:underline"
+                    >
+                      Book your first session now
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -127,44 +166,91 @@ const Dashboard: React.FC = () => {
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       key={apt.id}
-                      className="flex flex-col md:flex-row md:items-center justify-between p-6 rounded-2xl border border-indigo-deep/5 hover:border-gold-metallic/30 transition-all group"
+                      className="flex flex-col p-6 rounded-2xl border border-indigo-deep/5 hover:border-gold-metallic/30 transition-all group"
                     >
-                      <div className="flex items-start gap-4 mb-4 md:mb-0">
-                        <div className="w-12 h-12 bg-gold-metallic/10 rounded-xl flex items-center justify-center text-gold-metallic">
-                          <Star className="w-6 h-6" />
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 bg-gold-metallic/10 rounded-xl flex items-center justify-center text-gold-metallic">
+                            <Star className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-serif text-lg text-indigo-deep">{apt.consultationType}</h4>
+                              {isAdmin && (
+                                <span className="flex items-center gap-1 text-[10px] bg-indigo-deep/5 px-2 py-0.5 rounded-full text-indigo-deep/60 font-medium">
+                                  <UserIcon className="w-2 h-2" />
+                                  {apt.userName}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-indigo-deep/40 mt-1">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {new Date(apt.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {apt.time}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="font-serif text-lg text-indigo-deep">{apt.consultationType}</h4>
-                          <div className="flex items-center gap-4 text-sm text-indigo-deep/40 mt-1">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              {new Date(apt.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {apt.time}
-                            </span>
+
+                        <div className="flex items-center justify-between md:justify-end gap-6">
+                          <div className="text-right">
+                            <p className="text-sm font-bold text-indigo-deep/60 uppercase tracking-widest">Fee</p>
+                            <p className="font-serif text-indigo-deep">{apt.priceCharged === 0 ? 'FREE' : `₹${apt.priceCharged}`}</p>
+                            {apt.utrNumber && (
+                              <p className="text-[10px] font-mono text-indigo-deep/30 mt-1">UTR: {apt.utrNumber}</p>
+                            )}
+                          </div>
+                          <div className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 ${
+                            (apt.status === 'confirmed' || apt.status === 'Confirmed') ? 'bg-green-100 text-green-600' :
+                            (apt.status === 'pending' || apt.status === 'Pending Verification') ? 'bg-amber-100 text-amber-600' :
+                            'bg-indigo-deep/5 text-indigo-deep/40'
+                          }`}>
+                            {(apt.status === 'confirmed' || apt.status === 'Confirmed') ? <CheckCircle2 className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+                            {apt.status === 'pending' ? 'Pending' : apt.status}
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between md:justify-end gap-6">
-                        <div className="text-right">
-                          <p className="text-sm font-bold text-indigo-deep/60 uppercase tracking-widest">Fee</p>
-                          <p className="font-serif text-indigo-deep">{apt.priceCharged === 0 ? 'FREE' : `₹${apt.priceCharged}`}</p>
-                          {apt.utrNumber && (
-                            <p className="text-[10px] font-mono text-indigo-deep/30 mt-1">UTR: {apt.utrNumber}</p>
-                          )}
+                      {isAdmin && (
+                        <div className="mt-6 pt-4 border-t border-indigo-deep/5 flex flex-wrap gap-2">
+                          <button 
+                            onClick={() => handleStatusUpdate(apt.id!, 'Confirmed')}
+                            className="px-3 py-1.5 bg-green-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-green-600 transition-colors"
+                          >
+                            Confirm
+                          </button>
+                          <button 
+                            onClick={() => handleStatusUpdate(apt.id!, 'Pending Verification')}
+                            className="px-3 py-1.5 bg-amber-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-amber-600 transition-colors"
+                          >
+                            Set Pending
+                          </button>
+                          <button 
+                            onClick={() => handleStatusUpdate(apt.id!, 'completed')}
+                            className="px-3 py-1.5 bg-indigo-deep text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-indigo-deep/80 transition-colors"
+                          >
+                            Complete
+                          </button>
+                          <button 
+                            onClick={() => handleStatusUpdate(apt.id!, 'cancelled')}
+                            className="px-3 py-1.5 bg-red-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-red-600 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(apt.id!)}
+                            className="px-3 py-1.5 bg-red-100 text-red-600 text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-red-200 transition-colors flex items-center gap-1 ml-auto"
+                            title="Delete Appointment"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            Delete
+                          </button>
                         </div>
-                        <div className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 ${
-                          (apt.status === 'confirmed' || apt.status === 'Confirmed') ? 'bg-green-100 text-green-600' :
-                          (apt.status === 'pending' || apt.status === 'Pending Verification') ? 'bg-amber-100 text-amber-600' :
-                          'bg-indigo-deep/5 text-indigo-deep/40'
-                        }`}>
-                          {(apt.status === 'confirmed' || apt.status === 'Confirmed') ? <CheckCircle2 className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
-                          {apt.status}
-                        </div>
-                      </div>
+                      )}
                     </motion.div>
                   ))}
                 </div>
