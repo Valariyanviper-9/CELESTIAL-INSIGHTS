@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Calendar, Clock, CheckCircle, Loader2, Copy, ExternalLink, ShieldCheck } from 'lucide-react';
+import { X, Calendar, Clock, CheckCircle, Loader2, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
@@ -17,7 +17,6 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, initialSer
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [utrNumber, setUtrNumber] = useState('');
-  const [copySuccess, setCopySuccess] = useState(false);
   const [formData, setFormData] = useState({
     date: '',
     type: (initialService || 'Detailed Astrology') as Appointment['consultationType']
@@ -33,12 +32,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, initialSer
   const isFree = !profile?.hasUsedFreeConsultation;
   const price = isFree ? 0 : 2000;
   const upiId = 'meenutalwar.talwar@oksbi';
-
-  const handleCopyUPI = () => {
-    navigator.clipboard.writeText(upiId);
-    setCopySuccess(true);
-    setTimeout(() => setCopySuccess(false), 2000);
-  };
+  const upiLink = `upi://pay?pa=${upiId}&pn=Meenu%20Talwar&am=${price}&cu=INR&tn=Consultation%20Booking`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -216,8 +210,6 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, initialSer
                     </div>
 
                     <div className="bg-white border-2 border-indigo-deep/5 rounded-[32px] p-8 shadow-xl text-center space-y-6">
-                      <p className="text-sm font-medium text-indigo-deep/60">Secure Direct UPI Transfer to Meenu Talwar</p>
-                      
                       <div className="relative inline-block p-4 bg-white rounded-3xl shadow-inner border border-indigo-deep/5">
                         <img 
                           src="/gpay-qr.png" 
@@ -226,41 +218,28 @@ const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, initialSer
                           referrerPolicy="no-referrer"
                           onError={(e) => {
                             // Fallback if image doesn't exist
-                            (e.target as HTMLImageElement).src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=meenutalwar.talwar@oksbi%26pn=Meenu%20Talwar%26cu=INR';
+                            (e.target as HTMLImageElement).src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiLink)}`;
                           }}
                         />
                       </div>
 
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="flex items-center gap-2 bg-indigo-deep/5 px-4 py-2 rounded-full border border-indigo-deep/10">
-                          <span className="font-mono font-bold text-indigo-deep">{upiId}</span>
-                          <button 
-                            type="button"
-                            onClick={handleCopyUPI}
-                            className="p-1 hover:bg-indigo-deep/10 rounded-full transition-all text-gold-metallic"
-                          >
-                            <Copy className="w-4 h-4" />
-                          </button>
+                      <div className="space-y-3">
+                        <p className="text-[10px] font-bold text-indigo-deep/40 uppercase tracking-widest">Or Pay via App</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <a href={upiLink} className="flex items-center justify-center gap-2 py-3 px-4 bg-indigo-deep/5 hover:bg-indigo-deep/10 rounded-xl transition-all border border-indigo-deep/5 group">
+                            <span className="text-xs font-bold text-indigo-deep group-hover:text-gold-metallic">Google Pay</span>
+                          </a>
+                          <a href={upiLink} className="flex items-center justify-center gap-2 py-3 px-4 bg-indigo-deep/5 hover:bg-indigo-deep/10 rounded-xl transition-all border border-indigo-deep/5 group">
+                            <span className="text-xs font-bold text-indigo-deep group-hover:text-gold-metallic">PhonePe</span>
+                          </a>
+                          <a href={upiLink} className="flex items-center justify-center gap-2 py-3 px-4 bg-indigo-deep/5 hover:bg-indigo-deep/10 rounded-xl transition-all border border-indigo-deep/5 group">
+                            <span className="text-xs font-bold text-indigo-deep group-hover:text-gold-metallic">Paytm</span>
+                          </a>
+                          <a href={upiLink} className="flex items-center justify-center gap-2 py-3 px-4 bg-indigo-deep/5 hover:bg-indigo-deep/10 rounded-xl transition-all border border-indigo-deep/5 group">
+                            <span className="text-xs font-bold text-indigo-deep group-hover:text-gold-metallic">WhatsApp</span>
+                          </a>
                         </div>
-                        {copySuccess && (
-                          <motion.span 
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="text-[10px] font-bold text-green-600 uppercase tracking-widest"
-                          >
-                            Copied to clipboard!
-                          </motion.span>
-                        )}
                       </div>
-
-                      <a 
-                        href="upi://pay?pa=meenutalwar.talwar@oksbi&pn=Meenu%20Talwar&cu=INR"
-                        className="w-full btn-gold !py-4 flex items-center justify-center gap-2 group"
-                      >
-                        <ExternalLink className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                        Click to Pay via any UPI App
-                      </a>
-                      <p className="text-[10px] text-indigo-deep/40 italic">(Mobile only)</p>
                     </div>
 
                     <div className="space-y-4">
